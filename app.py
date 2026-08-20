@@ -1,5 +1,4 @@
 import hashlib
-import os
 import threading
 from pathlib import Path
 
@@ -20,6 +19,8 @@ app = Flask(__name__)
 audio_lock = threading.RLock()
 audio_ready = False
 audio_error = "Audio system has not been initialized."
+_current_volume: float = 1.0
+_sound_cache: dict = {}  # filepath str -> pygame.mixer.Sound
 
 
 def initialize_audio():
@@ -32,6 +33,7 @@ def initialize_audio():
             return False
         try:
             pygame.mixer.init()
+            pygame.mixer.set_num_channels(16)  # allow up to 16 sounds to overlap
             audio_ready = True
             audio_error = ""
         except Exception as exc:
@@ -40,7 +42,8 @@ def initialize_audio():
 
 
 def sound_id(filename):
-    return hashlib.sha256(filename.encode("utf-8")).hexdigest()[:16]
+    # 128-bit (32 hex chars) keeps collision probability negligible even for large sound libraries.
+    return hashlib.sha256(filename.encode("utf-8")).hexdigest()[:32]
 
 
 def get_available_sounds():
@@ -227,11 +230,14 @@ def play_sound(sound_identifier):
         return jsonify(error="Sound not found"), 404
     if not initialize_audio():
         return jsonify(error=audio_error), 503
+    filepath = str(SOUND_DIR / sound["file"])
     try:
         with audio_lock:
-            pygame.mixer.music.stop()
-            pygame.mixer.music.load(str(SOUND_DIR / sound["file"]))
-            pygame.mixer.music.play()
+            if filepath not in _sound_cache:
+                _sound_cache[filepath] = pygame.mixer.Sound(filepath)
+            snd = _sound_cache[filepath]
+            snd.set_volume(_current_volume)
+            snd.play()
         return jsonify(status="playing", id=sound_identifier)
     except Exception as exc:
         return jsonify(error=f"Unable to play sound: {exc}"), 500
@@ -242,7 +248,7 @@ def stop_sound():
     if not initialize_audio():
         return jsonify(error=audio_error), 503
     with audio_lock:
-        pygame.mixer.music.stop()
+        pygame.mixer.stop()  # stops all active channels
     return jsonify(status="stopped")
 
 
@@ -251,12 +257,13 @@ def playback_status():
     if not audio_ready:
         return jsonify(playing=False, audio_ready=False, error=audio_error)
     with audio_lock:
-        playing = bool(pygame.mixer.music.get_busy())
+        playing = bool(pygame.mixer.get_busy())
     return jsonify(playing=playing, audio_ready=True)
 
 
 @app.post("/api/volume")
 def set_volume():
+    global _current_volume
     data = request.get_json(silent=True)
     if not isinstance(data, dict):
         return jsonify(error="A JSON request body is required"), 400
@@ -269,9 +276,7 @@ def set_volume():
     if not initialize_audio():
         return jsonify(error=audio_error), 503
     with audio_lock:
-        pygame.mixer.music.set_volume(volume)
+        _current_volume = volume
+        for snd in _sound_cache.values():
+            snd.set_volume(volume)
     return jsonify(status="success", volume=volume)
-
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080, debug=False, threaded=True)

@@ -16,6 +16,10 @@ def test_sound_ids_are_unique_for_same_stem(tmp_path, monkeypatch):
     assert len({sound["id"] for sound in sounds}) == 2
 
 
+def test_sound_id_is_32_chars():
+    assert len(soundboard.sound_id("airhorn.mp3")) == 32
+
+
 def test_unknown_sound_returns_404(client):
     response = client.post("/api/play/not-a-real-id")
     assert response.status_code == 404
@@ -34,19 +38,42 @@ def test_volume_rejects_invalid_values(client):
 
 def test_valid_volume(monkeypatch, client):
     monkeypatch.setattr(soundboard, "initialize_audio", lambda: True)
-    monkeypatch.setattr(soundboard, "pygame", FakePygame())
     response = client.post("/api/volume", json={"volume": 0.5})
     assert response.status_code == 200
     assert response.get_json()["volume"] == 0.5
+    assert soundboard._current_volume == 0.5
 
 
-class FakeMusic:
-    def set_volume(self, volume):
-        self.volume = volume
+class FakeSound:
+    def __init__(self, filepath):
+        self.filepath = filepath
+        self.volume = 1.0
+
+    def set_volume(self, v):
+        self.volume = v
+
+    def play(self):
+        pass
 
 
 class FakeMixer:
-    music = FakeMusic()
+    Sound = FakeSound
+
+    @staticmethod
+    def init():
+        pass
+
+    @staticmethod
+    def set_num_channels(n):
+        pass
+
+    @staticmethod
+    def stop():
+        pass
+
+    @staticmethod
+    def get_busy():
+        return False
 
 
 class FakePygame:
