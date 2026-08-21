@@ -8,6 +8,14 @@ def test_index(client):
     assert b"WiFi Soundboard" in response.data
     assert "wsb_device_id=" in response.headers.get("Set-Cookie", "")
     assert b"app.js?v=5" in response.data
+    assert b"app.css?v=2" in response.data
+
+
+def test_card_favorite_is_centered_below_play_control():
+    styles = (soundboard.BASE_DIR / "static" / "app.css").read_text(encoding="utf-8")
+    rule = ".sound-pad>.favorite{position:absolute;left:50%;bottom:9px;top:auto;transform:translateX(-50%)"
+    assert rule in styles
+    assert ".sound-pad{padding-bottom:48px}" in styles
 
 
 def test_mobile_script_has_insecure_lan_id_fallback():
