@@ -5,6 +5,28 @@ def test_index(client):
     response = client.get("/")
     assert response.status_code == 200
     assert b"WiFi Soundboard" in response.data
+    assert "wsb_device_id=" in response.headers.get("Set-Cookie", "")
+
+
+def test_mobile_browser_is_registered(client):
+    soundboard.admin_state.clients.clear()
+    response = client.get("/", headers={"User-Agent": "Mozilla/5.0 iPhone Mobile"})
+    assert response.status_code == 200
+    clients = soundboard.admin_state.active_clients()
+    assert len(clients) == 1
+    assert clients[0]["name"] == "Mobile Browser"
+
+
+def test_blocked_cookie_is_rejected(client):
+    soundboard.admin_state.clients.clear()
+    response = client.get("/")
+    device_id = next(iter(soundboard.admin_state.clients))
+    soundboard.admin_state.blocked_devices.add(device_id)
+    try:
+        blocked = client.get("/api/sounds")
+        assert blocked.status_code == 403
+    finally:
+        soundboard.admin_state.blocked_devices.discard(device_id)
 
 
 def test_sound_ids_are_unique_for_same_stem(tmp_path, monkeypatch):
