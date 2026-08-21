@@ -6,6 +6,12 @@ function storageSet(key,value){try{window.localStorage.setItem(key,value);return
 function createId(){const cryptoApi=window.crypto||window.msCrypto;if(cryptoApi&&typeof cryptoApi.randomUUID==='function'){try{return cryptoApi.randomUUID()}catch(_){}}if(cryptoApi&&typeof cryptoApi.getRandomValues==='function'){try{const bytes=new Uint8Array(16);cryptoApi.getRandomValues(bytes);return Array.from(bytes,b=>('0'+b.toString(16)).slice(-2)).join('')}catch(_){}}return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`}
 const deviceId=storageGet('wifiSoundboardDeviceId')||createId();storageSet('wifiSoundboardDeviceId',deviceId);
 const deviceName=storageGet('wifiSoundboardDeviceName')||`${navigator.platform||'Device'} Browser`;
+const scaleSteps=[80,90,100,110,120,130,140];
+let boardScale=Number(storageGet('wifiSoundboardScale'))||100;
+if(!scaleSteps.includes(boardScale))boardScale=100;
+function applyBoardScale(){document.documentElement.style.setProperty('--board-scale',String(boardScale/100));const value=$('#scaleValue');if(value)value.textContent=`${boardScale}%`}
+function changeBoardScale(direction){const current=scaleSteps.indexOf(boardScale);const next=Math.max(0,Math.min(scaleSteps.length-1,current+direction));boardScale=scaleSteps[next];storageSet('wifiSoundboardScale',String(boardScale));applyBoardScale();toast(`Sound cards ${boardScale}%`)}
+applyBoardScale();$('#scaleDown').onclick=()=>changeBoardScale(-1);$('#scaleUp').onclick=()=>changeBoardScale(1);
 const api=async(url,opt={})=>{opt.headers=new Headers(opt.headers||{});opt.headers.set('X-Device-ID',deviceId);opt.headers.set('X-Device-Name',deviceName);const r=await fetch(url,opt);let d={};try{d=await r.json()}catch{}if(!r.ok)throw Error(d.error||`Request failed (${r.status})`);return d};
 const defaults=()=>({version:1,activePage:'main',favorites:[],pages:[{id:'main',name:'Main Board',pads:[]}]});
 function load(){try{state.config=JSON.parse(storageGet('wifiSoundboardConfig'))||defaults()}catch(_){state.config=defaults()}if(state.config.version!==1||!Array.isArray(state.config.pages)||!state.config.pages.length)state.config=defaults();if(!Array.isArray(state.config.favorites))state.config.favorites=[];for(const p of state.config.pages){if(!Array.isArray(p.pads))p.pads=[]}if(!state.config.pages.some(p=>p.id===state.config.activePage)&&state.config.activePage!=='favorites')state.config.activePage=state.config.pages[0].id}
