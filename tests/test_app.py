@@ -8,7 +8,7 @@ def test_index(client):
     assert b"WiFi Soundboard" in response.data
     assert "wsb_device_id=" in response.headers.get("Set-Cookie", "")
     assert b"app.js?v=7" in response.data
-    assert b"app.css?v=3" in response.data
+    assert b"app.css?v=4" in response.data
 
 
 def test_card_favorite_is_centered_below_play_control():
@@ -27,6 +27,11 @@ def test_mobile_scale_controls_persist_on_device():
     assert "wifiSoundboardScale" in script
     assert "storageSet('wifiSoundboardScale'" in script
     assert "--board-scale" in styles
+
+
+def test_stop_button_floats_above_mobile_soundboard():
+    styles = (soundboard.BASE_DIR / "static" / "app.css").read_text(encoding="utf-8")
+    assert ".stop{position:fixed;top:82px;right:16px;z-index:12" in styles
 
 
 def test_mobile_script_has_insecure_lan_id_fallback():
