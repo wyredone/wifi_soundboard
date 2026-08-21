@@ -127,8 +127,22 @@ def sound_id(filename):
     return hashlib.sha256(filename.encode("utf-8")).hexdigest()[:32]
 
 
+def get_ymh_filenames():
+    """Return flattened audio filenames supplied by YourMomDrops.zip."""
+    if not DROPS_ARCHIVE.exists():
+        return set()
+    with zipfile.ZipFile(DROPS_ARCHIVE) as archive:
+        return {
+            Path(member.filename).name.casefold()
+            for member in archive.infolist()
+            if not member.is_dir()
+            and Path(member.filename).suffix.lower() in SUPPORTED_EXTENSIONS
+        }
+
+
 def get_available_sounds():
     sounds = []
+    ymh_filenames = get_ymh_filenames()
     for path in sorted(SOUND_DIR.iterdir(), key=lambda item: item.name.casefold()):
         if path.is_file() and path.suffix.lower() in SUPPORTED_EXTENSIONS:
             sounds.append(
@@ -136,6 +150,7 @@ def get_available_sounds():
                     "id": sound_id(path.name),
                     "name": path.stem.replace("_", " ").replace("-", " ").title(),
                     "file": path.name,
+                    "ymh": path.name.casefold() in ymh_filenames,
                 }
             )
     return sounds

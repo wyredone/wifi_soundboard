@@ -7,7 +7,7 @@ def test_index(client):
     assert response.status_code == 200
     assert b"WiFi Soundboard" in response.data
     assert "wsb_device_id=" in response.headers.get("Set-Cookie", "")
-    assert b"app.js?v=6" in response.data
+    assert b"app.js?v=7" in response.data
     assert b"app.css?v=3" in response.data
 
 
@@ -82,6 +82,27 @@ def test_default_drops_are_flattened_into_sounds(tmp_path, monkeypatch):
     assert soundboard.ensure_default_sounds() == 1
     assert (destination / "hello.mp3").read_bytes() == b"audio"
     assert soundboard.ensure_default_sounds() == 0
+
+
+def test_ymh_sounds_are_identified_from_bundled_archive(tmp_path, monkeypatch):
+    archive = tmp_path / "YourMomDrops.zip"
+    sounds = tmp_path / "sounds"
+    sounds.mkdir()
+    (sounds / "hello.mp3").touch()
+    (sounds / "other.mp3").touch()
+    with zipfile.ZipFile(archive, "w") as drops:
+        drops.writestr("YourMomDrops/Category/hello.mp3", b"audio")
+    monkeypatch.setattr(soundboard, "DROPS_ARCHIVE", archive)
+    monkeypatch.setattr(soundboard, "SOUND_DIR", sounds)
+    available = {sound["file"]: sound for sound in soundboard.get_available_sounds()}
+    assert available["hello.mp3"]["ymh"] is True
+    assert available["other.mp3"]["ymh"] is False
+
+
+def test_default_app_includes_persistent_ymh_board():
+    script = (soundboard.BASE_DIR / "static" / "app.js").read_text(encoding="utf-8")
+    assert "{id:'ymh',name:'YMH',pads:[],system:true}" in script
+    assert "if(sound.ymh&&!ymhAssigned.has(sound.id))" in script
 
 
 def test_unknown_sound_returns_404(client):
