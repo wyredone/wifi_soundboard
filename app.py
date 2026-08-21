@@ -1,8 +1,10 @@
 import hashlib
 import threading
+import zipfile
 from pathlib import Path
 
-from flask import Flask, jsonify, request, render_template_string
+from flask import Flask, jsonify, request, render_template, send_from_directory
+from werkzeug.utils import secure_filename
 
 try:
     import pygame
@@ -12,8 +14,29 @@ except ImportError:  # Allows the UI and tests to start before audio dependencie
 
 BASE_DIR = Path(__file__).resolve().parent
 SOUND_DIR = BASE_DIR / "sounds"
+ASSET_ARCHIVE = BASE_DIR / "wifi_soundboard_assets.zip"
+ASSET_DIR = BASE_DIR / ".runtime_assets"
 SUPPORTED_EXTENSIONS = {".mp3", ".wav", ".ogg"}
 SOUND_DIR.mkdir(exist_ok=True)
+
+
+def ensure_assets():
+    """Extract the bundled design system once, without trusting archive paths."""
+    marker = ASSET_DIR / ".ready"
+    if marker.exists() or not ASSET_ARCHIVE.exists():
+        return
+    ASSET_DIR.mkdir(exist_ok=True)
+    root = ASSET_DIR.resolve()
+    with zipfile.ZipFile(ASSET_ARCHIVE) as archive:
+        for member in archive.infolist():
+            target = (ASSET_DIR / member.filename).resolve()
+            if root not in target.parents and target != root:
+                continue
+            archive.extract(member, ASSET_DIR)
+    marker.touch()
+
+
+ensure_assets()
 
 app = Flask(__name__)
 audio_lock = threading.RLock()
@@ -215,12 +238,33 @@ HTML_TEMPLATE = r"""
 
 @app.get("/")
 def index():
-    return render_template_string(HTML_TEMPLATE)
+    return render_template("index.html")
+
+
+@app.get("/assets/<path:filename>")
+def assets(filename):
+    return send_from_directory(ASSET_DIR, filename)
 
 
 @app.get("/api/sounds")
 def api_sounds():
     return jsonify(get_available_sounds())
+
+
+@app.post("/api/upload")
+def upload_sound():
+    uploaded = request.files.get("file")
+    if uploaded is None or not uploaded.filename:
+        return jsonify(error="Choose an audio file to upload"), 400
+    filename = secure_filename(uploaded.filename)
+    if not filename or Path(filename).suffix.lower() not in SUPPORTED_EXTENSIONS:
+        return jsonify(error="Only MP3, WAV, and OGG files are supported"), 400
+    destination = SOUND_DIR / filename
+    if destination.exists():
+        return jsonify(error="A sound with that filename already exists"), 409
+    uploaded.save(destination)
+    sound = next(item for item in get_available_sounds() if item["file"] == filename)
+    return jsonify(status="uploaded", sound=sound), 201
 
 
 @app.post("/api/play/<sound_identifier>")
@@ -233,6 +277,7 @@ def play_sound(sound_identifier):
     filepath = str(SOUND_DIR / sound["file"])
     try:
         with audio_lock:
+            pygame.mixer.stop()  # exclusive playback: one sound at a time
             if filepath not in _sound_cache:
                 _sound_cache[filepath] = pygame.mixer.Sound(filepath)
             snd = _sound_cache[filepath]
