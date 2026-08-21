@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#080a12">
+  <title>WiFi Soundboard</title>
+  <link rel="icon" href="/assets/logo/favicon_32.png">
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <header class="topbar">
+    <img class="brand" src="/assets/logo/logo_lockup.svg" alt="WiFi Soundboard — LAN Audio Control Center">
+    <div class="now-playing" aria-live="polite">
+      <img src="/assets/icons/audio/icon_waveform.svg" alt="">
+      <div><small>NOW PLAYING</small><strong id="nowPlaying">Ready</strong></div>
+      <div class="wave" id="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    </div>
+    <div class="server-state"><span class="live-dot"></span><span>LIVE</span><small id="connection">Connecting…</small></div>
+  </header>
+
+  <main class="workspace">
+    <aside class="panel pages view active" data-view="pages">
+      <div class="panel-title"><div><small>WORKSPACE</small><h2>Soundboard Pages</h2></div><button id="addPage" class="icon-btn" title="Add page">＋</button></div>
+      <nav id="pageList" class="page-list"></nav>
+      <button id="editMode" class="edit-button"><span>◇</span> Enter Edit Mode</button>
+      <section class="connection-card">
+        <div class="section-heading"><span>CONNECT DEVICE</span><span class="online">● ONLINE</span></div>
+        <div class="qr-shell"><div class="qr-placeholder">QR</div></div>
+        <code id="serverUrl"></code>
+        <small>Open this address on the same Wi-Fi network</small>
+      </section>
+    </aside>
+
+    <section class="panel board view mobile-current" data-view="board">
+      <div class="board-head">
+        <div><small>ACTIVE PAGE</small><h1 id="pageTitle">Main Board</h1></div>
+        <div class="board-actions">
+          <label class="search"><img src="/assets/icons/library/icon_search.svg" alt=""><input id="boardSearch" placeholder="Search pads"></label>
+          <label class="volume"><img src="/assets/icons/audio/icon_volume.svg" alt="Volume"><input id="volume" type="range" min="0" max="100" value="100"></label>
+          <button id="stop" class="stop"><img src="/assets/icons/audio/icon_stop.svg" alt=""> Stop</button>
+        </div>
+      </div>
+      <div id="padGrid" class="pad-grid"></div>
+      <div id="emptyBoard" class="empty hidden"><img src="/assets/empty_states/empty_no_sounds.svg" alt=""><h3>This page is ready</h3><p>Add sounds from the library to build your board.</p></div>
+    </section>
+
+    <aside class="panel library view" data-view="library">
+      <div class="panel-title"><div><small>AUDIO</small><h2>Sound Library</h2></div><button id="refresh" class="icon-btn" title="Rescan"><img src="/assets/icons/library/icon_refresh.svg" alt=""></button></div>
+      <label class="search wide"><img src="/assets/icons/library/icon_search.svg" alt=""><input id="librarySearch" placeholder="Search sound library"></label>
+      <button id="uploadButton" class="upload"><img src="/assets/icons/library/icon_upload_file.svg" alt=""> Upload Audio</button>
+      <input id="fileInput" type="file" accept=".mp3,.wav,.ogg,audio/*" hidden>
+      <div class="library-meta"><span id="soundCount">0 sounds</span><span>MP3 · WAV · OGG</span></div>
+      <div id="libraryList" class="library-list"></div>
+    </aside>
+  </main>
+
+  <nav class="bottom-nav" aria-label="Main navigation">
+    <button data-target="pages"><img src="/assets/icons/nav/icon_dashboard.svg" alt="">Pages</button>
+    <button data-target="board" class="active"><img src="/assets/icons/nav/icon_sounds_active.svg" alt="">Soundboard</button>
+    <button data-target="library"><img src="/assets/icons/nav/icon_upload.svg" alt="">Library</button>
+  </nav>
+  <div id="toast" class="toast" role="status"></div>
+  <script src="/static/app.js"></script>
+</body>
+</html>
