@@ -5,6 +5,7 @@ from pathlib import Path
 
 from flask import Flask, jsonify, request, render_template, send_from_directory
 from werkzeug.utils import secure_filename
+from admin_state import admin_state
 
 try:
     import pygame
@@ -44,6 +45,20 @@ audio_ready = False
 audio_error = "Audio system has not been initialized."
 _current_volume: float = 1.0
 _sound_cache: dict = {}  # filepath str -> pygame.mixer.Sound
+
+
+@app.before_request
+def register_client():
+    if request.path.startswith(("/static/", "/assets/")):
+        return None
+    device_id = request.headers.get("X-Device-ID", "").strip()[:128]
+    if not device_id:
+        return None  # initial page load establishes the browser ID in JavaScript
+    ip = request.remote_addr or "unknown"
+    name = request.headers.get("X-Device-Name", "Browser")[:80]
+    if not admin_state.is_allowed(device_id, ip):
+        return jsonify(error="This device is not authorized by the server administrator"), 403
+    admin_state.observe(device_id, ip, name, request.user_agent.string[:300])
 
 
 def initialize_audio():
