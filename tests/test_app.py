@@ -7,6 +7,14 @@ def test_index(client):
     assert response.status_code == 200
     assert b"WiFi Soundboard" in response.data
     assert "wsb_device_id=" in response.headers.get("Set-Cookie", "")
+    assert b"app.js?v=5" in response.data
+
+
+def test_mobile_script_has_insecure_lan_id_fallback():
+    script = (soundboard.BASE_DIR / "static" / "app.js").read_text(encoding="utf-8")
+    assert "function createId()" in script
+    assert "Math.random()" in script
+    assert "crypto.randomUUID();" not in script
 
 
 def test_mobile_browser_is_registered(client):
