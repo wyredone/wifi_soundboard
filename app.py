@@ -1,9 +1,10 @@
 import hashlib
 import threading
 import zipfile
+import uuid
 from pathlib import Path
 
-from flask import Flask, jsonify, request, render_template, send_from_directory
+from flask import Flask, g, jsonify, request, render_template, send_from_directory
 from werkzeug.utils import secure_filename
 from admin_state import admin_state
 
@@ -51,14 +52,30 @@ _sound_cache: dict = {}  # filepath str -> pygame.mixer.Sound
 def register_client():
     if request.path.startswith(("/static/", "/assets/")):
         return None
-    device_id = request.headers.get("X-Device-ID", "").strip()[:128]
-    if not device_id:
-        return None  # initial page load establishes the browser ID in JavaScript
+    device_id = (request.cookies.get("wsb_device_id") or
+                 request.headers.get("X-Device-ID", "").strip()[:128] or
+                 uuid.uuid4().hex)
+    g.wsb_device_id = device_id
+    g.wsb_set_device_cookie = request.cookies.get("wsb_device_id") != device_id
     ip = request.remote_addr or "unknown"
-    name = request.headers.get("X-Device-Name", "Browser")[:80]
+    name = request.headers.get("X-Device-Name", "").strip()[:80]
+    if not name:
+        agent = request.user_agent.string.lower()
+        kind = "Mobile" if any(word in agent for word in ("mobile", "android", "iphone")) else "Computer"
+        name = f"{kind} Browser"
     if not admin_state.is_allowed(device_id, ip):
         return jsonify(error="This device is not authorized by the server administrator"), 403
     admin_state.observe(device_id, ip, name, request.user_agent.string[:300])
+
+
+@app.after_request
+def persist_client_identity(response):
+    if getattr(g, "wsb_set_device_cookie", False):
+        response.set_cookie("wsb_device_id", g.wsb_device_id, max_age=31536000,
+                            samesite="Lax", httponly=False)
+    if request.path in ("/", "/static/app.js"):
+        response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 def initialize_audio():
