@@ -1,4 +1,5 @@
 import app as soundboard
+import zipfile
 
 
 def test_index(client):
@@ -40,6 +41,20 @@ def test_sound_ids_are_unique_for_same_stem(tmp_path, monkeypatch):
 
 def test_sound_id_is_32_chars():
     assert len(soundboard.sound_id("airhorn.mp3")) == 32
+
+
+def test_default_drops_are_flattened_into_sounds(tmp_path, monkeypatch):
+    archive = tmp_path / "drops.zip"
+    destination = tmp_path / "sounds"
+    destination.mkdir()
+    with zipfile.ZipFile(archive, "w") as drops:
+        drops.writestr("Drops/Category/hello.mp3", b"audio")
+        drops.writestr("Drops/README.md", b"ignore")
+    monkeypatch.setattr(soundboard, "DROPS_ARCHIVE", archive)
+    monkeypatch.setattr(soundboard, "SOUND_DIR", destination)
+    assert soundboard.ensure_default_sounds() == 1
+    assert (destination / "hello.mp3").read_bytes() == b"audio"
+    assert soundboard.ensure_default_sounds() == 0
 
 
 def test_unknown_sound_returns_404(client):

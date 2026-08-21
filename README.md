@@ -22,6 +22,10 @@ operation and troubleshooting.
 
 The sound list refreshes every five seconds. Renamed display labels are stored only in the current browser and do not rename files.
 
+If `YourMomDrops.zip` is present in the project root, the application safely imports all MP3, WAV,
+and OGG files into `sounds` on startup. Category folders in the archive are flattened, existing files
+are preserved, and non-audio metadata is ignored.
+
 ## Firewall
 
 If another device cannot connect, allow Python through Windows Defender Firewall on **Private networks only**. This app has no user authentication, so do not expose port 8080 to the internet or an untrusted network.

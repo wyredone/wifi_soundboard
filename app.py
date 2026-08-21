@@ -18,8 +18,34 @@ BASE_DIR = Path(__file__).resolve().parent
 SOUND_DIR = BASE_DIR / "sounds"
 ASSET_ARCHIVE = BASE_DIR / "wifi_soundboard_assets.zip"
 ASSET_DIR = BASE_DIR / ".runtime_assets"
+DROPS_ARCHIVE = BASE_DIR / "YourMomDrops.zip"
 SUPPORTED_EXTENSIONS = {".mp3", ".wav", ".ogg"}
 SOUND_DIR.mkdir(exist_ok=True)
+
+
+def ensure_default_sounds():
+    """Flatten supported audio from the bundled drops archive into sounds/."""
+    if not DROPS_ARCHIVE.exists():
+        return 0
+    imported = 0
+    with zipfile.ZipFile(DROPS_ARCHIVE) as archive:
+        for member in archive.infolist():
+            if member.is_dir():
+                continue
+            filename = Path(member.filename).name
+            if not filename or Path(filename).suffix.lower() not in SUPPORTED_EXTENSIONS:
+                continue
+            destination = SOUND_DIR / filename
+            if destination.exists():
+                continue
+            with archive.open(member) as source, destination.open("wb") as target:
+                while chunk := source.read(1024 * 1024):
+                    target.write(chunk)
+            imported += 1
+    return imported
+
+
+ensure_default_sounds()
 
 
 def ensure_assets():
