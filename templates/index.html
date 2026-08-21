@@ -61,6 +61,16 @@
     <button data-target="library"><img src="/assets/icons/nav/icon_upload.svg" alt="">Library</button>
   </nav>
   <div id="toast" class="toast" role="status"></div>
-  <script src="/static/app.js?v=4"></script>
+  <script>
+    window.addEventListener('error', function (event) {
+      var empty = document.getElementById('emptyBoard');
+      if (!empty) return;
+      empty.classList.remove('hidden');
+      empty.innerHTML = '<h3>Soundboard could not start</h3><p>' +
+        String(event.message || 'Browser compatibility error') +
+        '</p><p>Refresh this page after updating the server.</p>';
+    });
+  </script>
+  <script src="/static/app.js?v=5"></script>
 </body>
 </html>
