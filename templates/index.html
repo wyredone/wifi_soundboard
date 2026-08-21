@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#080a12">
   <title>WiFi Soundboard</title>
   <link rel="icon" href="/assets/logo/favicon_32.png">
-  <link rel="stylesheet" href="/static/app.css?v=2">
+  <link rel="stylesheet" href="/static/app.css?v=3">
 </head>
 <body>
   <header class="topbar">
@@ -36,6 +36,11 @@
       <div class="board-head">
         <div><small>ACTIVE PAGE</small><h1 id="pageTitle">Main Board</h1></div>
         <div class="board-actions">
+          <div class="scale-control" aria-label="Sound card size">
+            <button id="scaleDown" type="button" title="Make sound cards smaller" aria-label="Make sound cards smaller">−</button>
+            <output id="scaleValue" aria-live="polite">100%</output>
+            <button id="scaleUp" type="button" title="Make sound cards larger" aria-label="Make sound cards larger">＋</button>
+          </div>
           <label class="search"><img src="/assets/icons/library/icon_search.svg" alt=""><input id="boardSearch" placeholder="Search pads"></label>
           <label class="volume"><img src="/assets/icons/audio/icon_volume.svg" alt="Volume"><input id="volume" type="range" min="0" max="100" value="100"></label>
           <button id="stop" class="stop"><img src="/assets/icons/audio/icon_stop.svg" alt=""> Stop</button>
@@ -71,6 +76,6 @@
         '</p><p>Refresh this page after updating the server.</p>';
     });
   </script>
-  <script src="/static/app.js?v=5"></script>
+  <script src="/static/app.js?v=6"></script>
 </body>
 </html>
