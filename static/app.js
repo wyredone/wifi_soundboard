@@ -1,6 +1,8 @@
 const state={sounds:[],activeId:null,editing:false,config:null};
 const $=s=>document.querySelector(s); const $$=s=>[...document.querySelectorAll(s)];
-const api=async(url,opt={})=>{const r=await fetch(url,opt);let d={};try{d=await r.json()}catch{}if(!r.ok)throw Error(d.error||`Request failed (${r.status})`);return d};
+const deviceId=localStorage.getItem('wifiSoundboardDeviceId')||crypto.randomUUID();localStorage.setItem('wifiSoundboardDeviceId',deviceId);
+const deviceName=localStorage.getItem('wifiSoundboardDeviceName')||`${navigator.platform||'Device'} Browser`;
+const api=async(url,opt={})=>{opt.headers=new Headers(opt.headers||{});opt.headers.set('X-Device-ID',deviceId);opt.headers.set('X-Device-Name',deviceName);const r=await fetch(url,opt);let d={};try{d=await r.json()}catch{}if(!r.ok)throw Error(d.error||`Request failed (${r.status})`);return d};
 const defaults=()=>({version:1,activePage:'main',pages:[{id:'main',name:'Main Board',pads:[]}]});
 function load(){try{state.config=JSON.parse(localStorage.getItem('wifiSoundboardConfig'))||defaults()}catch{state.config=defaults()}if(state.config.version!==1)state.config=defaults()}
 function save(){localStorage.setItem('wifiSoundboardConfig',JSON.stringify(state.config))}

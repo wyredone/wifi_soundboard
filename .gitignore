@@ -1,6 +1,7 @@
 .venv/
 .testvenv/
 .runtime_assets/
+.runtime_data/
 __pycache__/
 .pytest_cache/
 *.py[cod]
