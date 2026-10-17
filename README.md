@@ -8,7 +8,7 @@ A local-network soundboard that lets phones and computers trigger audio playback
 2. Run `setup.bat`.
 3. Put `.mp3`, `.wav`, or `.ogg` files in the `sounds` folder.
 4. Run `start_soundboard.bat` to launch the native Windows Server Control Center.
-5. On another device connected to the same trusted Wi-Fi network, open `http://HOST-IP:8080`.
+5. On another device connected to the same trusted Wi-Fi network, open `http://HOST-IP:48619`.
 
 ## Windows Server Control Center
 
@@ -28,7 +28,7 @@ are preserved, and non-audio metadata is ignored.
 
 ## Firewall
 
-If another device cannot connect, allow Python through Windows Defender Firewall on **Private networks only**. This app has no user authentication, so do not expose port 8080 to the internet or an untrusted network.
+If another device cannot connect, allow Python through Windows Defender Firewall on **Private networks only**. This app has no user authentication, so do not expose port 48619 to the internet or an untrusted network.
 
 ## Development
 
@@ -39,3 +39,5 @@ python -m pip install -r requirements-dev.txt
 python -m pytest
 python run.py
 ```
+
+Default web server port: 48619. Existing saved port settings are preserved.
