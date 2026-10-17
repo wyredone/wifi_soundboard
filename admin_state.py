@@ -41,7 +41,7 @@ class AdminState:
         self.accept_connections = self.settings.get("accept_connections", True)
 
     def _load_settings(self):
-        defaults = {"schema": 1, "host": "0.0.0.0", "port": 8080,
+        defaults = {"schema": 1, "host": "0.0.0.0", "port": 48619,
                     "start_minimized": False, "close_to_tray": True,
                     "accept_connections": True, "blocked_devices": [], "blocked_ips": []}
         try:
